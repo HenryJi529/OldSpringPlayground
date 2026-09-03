@@ -1,0 +1,32 @@
+{
+  "name": "ai-chat-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite build --mode development && vite preview --mode development",
+    "type-check": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@microsoft/fetch-event-source": "^2.0.1",
+    "ant-design-vue": "^4.2.6",
+    "dompurify": "^3.4.14",
+    "highlight.js": "^11.10.0",
+    "marked": "^15.0.0",
+    "pinia": "^2.3.0",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-legacy": "^6.1.1",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "typescript": "^5.9.3",
+    "vite": "^6.0.7",
+    "vue-tsc": "^3.3.11"
+  },
+  "browserslist": [
+    "Chrome >= 86"
+  ]
+}

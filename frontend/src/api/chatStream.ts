@@ -7,7 +7,7 @@ export interface ChatStreamOptions {
   message: string
   /** 会话 id（首轮不传） */
   sessionId?: string | null
-  /** JWT（裸 token，无 Bearer 前缀） */
+  /** JWT Token */
   token: string
   /** 用于"停止"按钮中断流 */
   signal: AbortSignal

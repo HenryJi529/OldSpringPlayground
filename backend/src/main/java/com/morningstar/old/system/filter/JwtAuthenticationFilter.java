@@ -32,6 +32,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        // MCP 端点有自己的认证体系（mcp-token，RS256），与系统登录 token（HS256）互不通用；
+        // 本过滤器若尝试用系统 JwtUtil 解析 mcp-token 会误判为 TOKEN_INVALID 并短路请求，
+        // 故 /mcp/** 直接跳过（身份鉴定在 MCP 工具方法内完成，见 SecurityConfig 白名单注释）
+        String uri = request.getRequestURI();
+        return "/mcp".equals(uri) || uri.startsWith("/mcp/");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
         // 获取JWT
         String token = request.getHeader(HttpHeaders.AUTHORIZATION);

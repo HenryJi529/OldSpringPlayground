@@ -1,6 +1,6 @@
 package com.morningstar.old.infra.ai;
 
-import com.morningstar.old.infra.properties.AiMcpProperties;
+import com.morningstar.old.infra.properties.AiMcpClientProperties;
 import org.noear.solon.ai.mcp.McpChannel;
 import org.noear.solon.ai.mcp.client.McpClientProvider;
 import org.noear.solon.net.http.HttpUtils;
@@ -9,6 +9,7 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -26,12 +27,16 @@ public class McpClients implements DisposableBean {
 
     private final Map<String, McpClientProvider> providers;
 
-    public McpClients(AiMcpProperties properties) {
+    public McpClients(AiMcpClientProperties properties) {
         Map<String, McpClientProvider> map = new LinkedHashMap<>();
-        properties.getServers().forEach((name, url) ->
+        properties.getEndpoints().forEach((name, url) ->
                 map.put(name, McpClientProvider.builder()
                         .channel(McpChannel.STREAMABLE)
                         .url(url)
+                        // 超时（默认 30s 太短，模型慢时自调用端点排队会触发
+                        // "TimeoutException: 30000ms in 'source(MonoDeferContextual)'"）：
+                        // 一个 timeout 同时驱动 HTTP 超时和 requestTimeout/initializationTimeout 的回落值
+                        .timeout(Duration.ofSeconds(properties.getTimeoutSeconds()))
                         // 凭证按 MCP 规范走 Authorization 请求头：
                         // httpFactory 每次发请求都会被调用，从 ThreadLocal 取当前请求的 token 写进头
                         // （无 token 时如 initialize/tools/list 握手请求则不带）

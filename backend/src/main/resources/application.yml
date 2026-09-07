@@ -22,6 +22,9 @@ spring:
 mybatis-plus:
   mapper-locations: classpath:/mapper/**/*.xml
   type-aliases-package: com.morningstar.*.pojo.po
+  configuration:
+    # SQL 日志走 slf4j（由 logback 按 logging.level 输出），每次执行打印 SQL、参数、结果行数
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
 
 logging:
   config: classpath:logback-spring.xml
@@ -33,6 +36,8 @@ logging:
     file: "%d{${LOG_DATEFORMAT_PATTERN}} [%thread] %-5level %logger{50} - %msg%n"
   level: # logger-level
     root: info
+    # mapper 接口包开 debug，配合 mybatis-plus log-impl 输出 SQL 日志
+    com.morningstar.old.demo.mapper: debug
     org.springframework.transaction: debug
     org.springframework.jdbc.datasource.DataSourceTransactionManager: debug
   logback:
@@ -86,15 +91,29 @@ app:
         - "survey_admin"
   ai:
     chat:
-      base-url: "https://api.deepseek.com"
-      api-key: "${AI_API_KEY}"
-      model: "deepseek-v4-flash"
+#      base-url: "https://api.deepseek.com"
+#      api-key: "${DEEPSEEK_API_KEY}"
+#      model: "deepseek-v4-flash"
+      base-url: "https://api.siliconflow.cn/v1/chat/completions"
+      api-key: "${SILICON_API_KEY}"
+      model: "Qwen/Qwen3.6-35B-A3B"
+      timeout-seconds: 120
     mcp:
-      # MCP 服务列表：key = 名字（业务侧按名字注入），value = 端点 url
-      # 均为本应用内嵌的 MCP server（/mcp/** 已白名单，自调用不会被认证拦截）
-      servers:
-        person: "http://localhost:8088/mcp/person"
-        enterprise: "http://localhost:8088/mcp/enterprise"
+      client:
+        timeout-seconds: 300
+        # MCP 服务列表：key = 名字（业务侧按名字注入），value = 端点 url
+        # 均为本应用内嵌的 MCP server（/mcp/** 已白名单，自调用不会被认证拦截）
+        endpoints:
+          demo: "http://localhost:8088/mcp/demo"
+        signing:
+          private-key: "${MCP_PRIVATE_KEY}"
+          public-key: "${MCP_PUBLIC_KEY}"
+          issuer: "self"
+          ttl-seconds: 300
+      server:
+        # 信任名册：iss → 该签发方的公钥（X.509 单行 base64）。新调用方接入 = 对方自产密钥对 + 此处登记公钥
+        issuers:
+          self: "${MCP_PUBLIC_KEY}"
 
 springdoc:
   api-docs:

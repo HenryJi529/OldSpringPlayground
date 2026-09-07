@@ -9,6 +9,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
+import java.time.Duration;
+import java.util.HashMap;
+
 /**
  * AI 基础设施 Bean 装配（与具体业务无关，各业务模块注入使用）：
  * <ul>
@@ -26,10 +29,18 @@ public class AiChatConfig {
     @Bean
     public ChatModel chatModel(@Value("${app.ai.chat.base-url}") String baseUrl,
                                @Value("${app.ai.chat.api-key:}") String apiKey,
-                               @Value("${app.ai.chat.model}") String model) {
+                               @Value("${app.ai.chat.model}") String model,
+                               @Value("${app.ai.chat.timeout-seconds}") Integer timeoutSeconds) {
+        HashMap<String, Object> chatTemplateKwargs = new HashMap<>();
+        chatTemplateKwargs.put("enable_thinking", true);
         return ChatModel.of(baseUrl)
                 .apiKey(apiKey)
                 .model(model)
+                .modelOptions(o -> o
+                        .thinking(true)
+                        .optionSet("chat_template_kwargs", chatTemplateKwargs)
+                )
+                .timeout(Duration.ofSeconds(timeoutSeconds))
                 .build();
     }
 

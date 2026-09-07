@@ -52,13 +52,23 @@
     </main>
 
     <footer class="chat-input-area">
+      <div class="template-chips">
+        <button
+          v-for="tpl in templates"
+          :key="tpl.label"
+          class="template-chip"
+          @click="onPickTemplate(tpl.text)"
+        >
+          <span class="chip-icon">{{ tpl.icon }}</span>{{ tpl.label }}
+        </button>
+      </div>
       <div class="input-capsule">
         <a-textarea
+          ref="inputRef"
           v-model:value="input"
           :bordered="false"
           :auto-size="{ minRows: 1, maxRows: 6 }"
           placeholder="输入消息，Enter 发送，Shift+Enter 换行"
-          :disabled="chat.streaming"
           @keydown.enter.exact.prevent="onSend"
         />
         <a-button
@@ -100,7 +110,20 @@ const auth = useAuthStore()
 const chat = useChatStore()
 
 const input = ref('')
+const inputRef = ref()
 const listRef = ref<HTMLElement | null>(null)
+
+// 快捷提问模板，点击填入输入框（不直接发送，可再编辑）
+const templates = [
+  // 🛠 🛍️ 🔍️ 👔 ✏️
+  { icon: '🏢', label: '查看企业数据', text: '帮我查看企业数据，企业名包含：晨星' },
+]
+
+function onPickTemplate(text: string) {
+  if (chat.streaming) return
+  input.value = text
+  inputRef.value?.focus()
+}
 
 function onSend() {
   const text = input.value.trim()
@@ -272,7 +295,53 @@ watch(
 }
 
 .chat-input-area {
-  padding: 12px 24px 20px;
+  padding: 8px 24px 20px;
+}
+
+.template-chips {
+  display: flex;
+  gap: 8px;
+  padding: 6px 6px 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.template-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.template-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  font-size: 13px;
+  color: #666;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  transition: color 0.2s, border-color 0.2s, background 0.2s, transform 0.2s, box-shadow 0.2s;
+  animation: fade-up 0.25s ease;
+}
+
+.template-chip:hover:not(:disabled) {
+  color: #1677ff;
+  border-color: #91caff;
+  background: #f0f7ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(22, 119, 255, 0.12);
+}
+
+.template-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chip-icon {
+  font-size: 12px;
 }
 
 .input-capsule {

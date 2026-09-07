@@ -5,6 +5,9 @@ import org.noear.solon.ai.chat.interceptor.ToolChain;
 import org.noear.solon.ai.chat.interceptor.ToolRequest;
 import org.noear.solon.ai.chat.tool.ToolResult;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * 工具调用轨迹拦截器：把每次工具调用转成 onToolStart / onToolEnd / onToolError 回调。
  * 挂接在 solon-ai 的 {@link ToolChain} 上，call 和 stream 两种模式都会经过。
@@ -12,25 +15,27 @@ import org.noear.solon.ai.chat.tool.ToolResult;
  */
 public class ToolTraceInterceptor implements ChatInterceptor {
 
-    private final ToolEventListener listener;
+    private final List<ToolEventListener> listeners;
 
-    public ToolTraceInterceptor(ToolEventListener listener) {
-        this.listener = listener;
+    public ToolTraceInterceptor(ToolEventListener... listeners) {
+        this.listeners = Arrays.asList(listeners);
     }
 
     @Override
     public ToolResult interceptTool(ToolRequest req, ToolChain chain) throws Throwable {
         String toolName = chain.getTool().name();
+        String toolTitle = chain.getTool().title();
+        String tool = toolTitle.isEmpty() ? toolName: toolTitle;
 
-        listener.onToolStart(toolName, req.getArgs());
+        listeners.forEach(l -> l.onToolStart(tool, req.getArgs()));
 
         try {
             ToolResult result = chain.doIntercept(req);
-            listener.onToolEnd(toolName, result.getContent(), result.isError());
+            listeners.forEach(l -> l.onToolEnd(tool, result.getContent(), result.isError()));
             return result;
         } catch (Throwable e) {
             // 调用本身失败（传输错误、server 不可达等），没拿到任何 ToolResult
-            listener.onToolError(toolName, e.getMessage());
+            listeners.forEach(l -> l.onToolError(tool, e.getMessage()));
             throw e;
         }
     }

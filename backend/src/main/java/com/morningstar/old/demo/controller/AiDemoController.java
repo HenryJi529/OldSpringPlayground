@@ -1,10 +1,7 @@
 package com.morningstar.old.demo.controller;
 
+import com.morningstar.old.infra.ai.*;
 import com.morningstar.old.infra.response.R;
-import com.morningstar.old.infra.ai.AiChatStream;
-import com.morningstar.old.infra.ai.TokenRelayInterceptor;
-import com.morningstar.old.infra.ai.ToolTraceInterceptor;
-import com.morningstar.old.infra.ai.McpClients;
 import com.morningstar.old.infra.constant.RedisConstant;
 import com.morningstar.old.system.util.AuthUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.ai.chat.*;
 import org.noear.solon.ai.chat.message.AssistantMessage;
 import org.noear.solon.ai.chat.message.ChatMessage;
-import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,14 +21,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.Disposable;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * AI 对话接口：自然语言查询 / 更新数据，基于 ChatModel + MCP client
@@ -47,11 +39,13 @@ public class AiDemoController {
     /**
      * 本接口使用的 MCP server 名字列表（对应 application.yml 中 app.ai.mcp.servers 的 key）
      */
-    private static final List<String> MCP_NAMES = Arrays.asList("person", "enterprise");
+    private static final List<String> MCP_NAMES = Collections.singletonList("demo");
 
     private final ChatModel chatModel;
     private final ChatSessionFactory chatSessionFactory;
     private final McpClients mcpClients;
+    private final McpClientUtil mcpClientUtil;
+    private final McpClientToolLogger mcpClientToolLogger;
 
     /**
      * SSE 总超时（含多轮工具调用的整体时长）
@@ -62,16 +56,26 @@ public class AiDemoController {
      * 系统提示词：只定角色和行为规则，不枚举工具（工具清单由 MCP 动态发现，模型自行探索）
      */
     private static final String SYSTEM_PROMPT =
-            "你是一个数据助手，辅助用户查询/更新数据" +
-                    "规则：" +
-                    "1) 调用工具无需关心任何凭证，系统会自动携带，不要向用户索要；" +
-                    "2) 思考和回答必须都使用中文；" +
-                    "3) 只能操作用户自己的数据；" +
-                    "4) 只有用户明确指定企业时，才能查询对应企业的信息，不要一次查多个企业的信息给用户；";
+            "你是一个数据助手，使用MCP工具帮助用户查询/更新数据。规则：" +
+                    "1) 思考和回答必须都使用中文；" +
+                    "2) 不要质疑MCP接口的健壮性；";
+
+    /**
+     * 为当前登录用户签发 mcp-token。
+     *
+     * <p>第三方 MCP 调用方（如 Claude Code）的取凭证入口：先走 /user/auth/login 登录，
+     * 再用系统 token 换 mcp-token，之后持 mcp-token 直连 /mcp/** 端点。
+     * 不接受 account 参数——只能以调用者自己的身份签发，杜绝替他人铸 token。</p>
+     */
+    @Operation(summary = "签发当前用户的 mcp-token")
+    @PostMapping("/mcp/token")
+    public R<String> createMcpToken() {
+        return R.ok(mcpClientUtil.createToken(AuthUtil.getUserId()));
+    }
 
     @Operation(summary = "对话（同步）")
     @PostMapping("/chat/sync")
-    public R<AiChatResponseVo> chatSync(@Valid @RequestBody AiChatRequestVo req, HttpServletRequest request) {
+    public R<AiChatResponseVo> chatSync(@Valid @RequestBody AiChatRequestVo req) {
         // 认证已由过滤器完成，账号来自 SecurityContext
         String account = AuthUtil.getUserId();
 
@@ -85,7 +89,9 @@ public class AiDemoController {
                     // toolAdd 可重复调用，按名字逐个注入多个 MCP server 的工具（内部按工具名聚合）
                     .options(o -> {
                         bindTools(o);
-                        bindToken(o, request);
+                        bindToken(o, account);
+                        o.toolContextPut(ChatSession.ATTR_SESSIONID, sessionId);
+                        o.interceptorAdd(new ToolTraceInterceptor(mcpClientToolLogger));
                     })
                     .call();
         } catch (Exception e) {
@@ -117,7 +123,7 @@ public class AiDemoController {
      */
     @Operation(summary = "对话（流式）")
     @PostMapping("/chat/stream")
-    public SseEmitter chatStream(@Valid @RequestBody AiChatRequestVo req, HttpServletRequest request) {
+    public SseEmitter chatStream(@Valid @RequestBody AiChatRequestVo req) {
         String account = AuthUtil.getUserId();
 
         String sessionId = resolveSessionId(req.getSessionId());
@@ -136,9 +142,12 @@ public class AiDemoController {
         Disposable subscription = chatModel.prompt(buildMessages(session, req.getMessage()))
                 .options(o -> {
                     bindTools(o);
-                    bindToken(o, request);
-                    // 按请求注册拦截器：工具事件绑定到当前请求的 SSE 出口
-                    o.interceptorAdd(new ToolTraceInterceptor(stream));
+                    bindToken(o, account);
+                    o.toolContextPut(ChatSession.ATTR_SESSIONID, sessionId);
+                    // 按请求注册拦截器：工具事件同时记日志并推到当前请求的 SSE 出口。
+                    // 注意 solon-ai 的 interceptorAdd 按拦截器 Class 去重（同类后加覆盖先加），
+                    // 两个监听器必须组合进一个 ToolTraceInterceptor，不能 add 两次
+                    o.interceptorAdd(new ToolTraceInterceptor(mcpClientToolLogger, stream));
                 })
                 .stream()
                 .subscribe(
@@ -248,9 +257,10 @@ public class AiDemoController {
     }
 
     /**
-     * 绑定调用方凭证：透传当前请求的 Authorization 头
+     * 绑定调用方凭证：按当前用户现场签发 mcp-token，由拦截器放入 ThreadLocal、
+     * MCP client 发请求时写入 Authorization 头
      */
-    private void bindToken(ChatOptions options, HttpServletRequest request) {
-        options.interceptorAdd(new TokenRelayInterceptor(request.getHeader(HttpHeaders.AUTHORIZATION)));
+    private void bindToken(ChatOptions options, String account) {
+        options.interceptorAdd(new TokenRelayInterceptor(mcpClientUtil.createToken(account)));
     }
 }

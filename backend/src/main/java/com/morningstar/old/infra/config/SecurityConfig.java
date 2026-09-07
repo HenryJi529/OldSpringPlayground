@@ -42,8 +42,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             "/static/**",
             "/resources/**",
             "/favicon.ico",
-            "/mcp/**",
-            "/demo/mcp"
+            "/mcp/**"
     );
     /**
      * 白名单接口(GET方法)

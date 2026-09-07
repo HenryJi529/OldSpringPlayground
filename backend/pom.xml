@@ -21,12 +21,13 @@
         <java.version>1.8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <solon.version>4.0.6</solon.version>
-        <jjwt.version>0.11.5</jjwt.version>
+        <jjwt.version>0.9.1</jjwt.version>
         <lombok.version>1.18.38</lombok.version>
         <mysql.version>5.1.46</mysql.version>
         <mybatis-plus.version>3.4.3.4</mybatis-plus.version>
         <openapi.version>1.6.15</openapi.version>
         <hutool.version>5.8.29</hutool.version>
+        <fuzzywuzzy.version>1.4.0</fuzzywuzzy.version>
     </properties>
 
     <dependencies>
@@ -40,6 +41,10 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
         </dependency>
         <dependency>
@@ -48,17 +53,7 @@
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-api</artifactId>
-            <version>${jjwt.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-impl</artifactId>
-            <version>${jjwt.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-jackson</artifactId>
+            <artifactId>jjwt</artifactId>
             <version>${jjwt.version}</version>
         </dependency>
         <dependency>
@@ -104,6 +99,13 @@
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-all</artifactId>
             <version>${hutool.version}</version>
+        </dependency>
+
+        <!-- 字符串相似度：规整器用 token-sort 算法匹配口语输入到字典值（对中文安全，见 StringSimilarityUtil） -->
+        <dependency>
+            <groupId>me.xdrop</groupId>
+            <artifactId>fuzzywuzzy</artifactId>
+            <version>${fuzzywuzzy.version}</version>
         </dependency>
 
         <!-- solon-ai：以 MCP 方式暴露接口 -->

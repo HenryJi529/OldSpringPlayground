@@ -43,7 +43,7 @@ public class JwtUtil {
                 .claim(NAME_CLAIM, name)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + ttl))
-                .signWith(getSecretKey(), algorithm)
+                .signWith(algorithm, getSecretKey())
                 .compact();
     }
 
@@ -55,7 +55,7 @@ public class JwtUtil {
      * 获取Token解析器
      */
     private JwtParser getParser() {
-        return Jwts.parserBuilder().setSigningKey(getSecretKey()).build();
+        return Jwts.parser().setSigningKey(getSecretKey());
     }
 
     /**

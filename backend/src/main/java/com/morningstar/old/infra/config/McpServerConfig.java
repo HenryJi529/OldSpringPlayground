@@ -59,6 +59,7 @@ public class McpServerConfig {
 
             McpServerEndpointProvider serverEndpointProvider = McpServerEndpointProvider.builder()
                     .from(serverEndpointClz, anno)
+                    .mcpEndpoint(anno.mcpEndpoint()) // NOTE: 可以额外配置context-path
                     .build();
 
             serverEndpointProvider.addTool(new MethodToolProvider(serverEndpointClz, serverEndpoint));

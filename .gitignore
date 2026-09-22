@@ -1,0 +1,9 @@
+.DS_Store
+.claude/
+.qoder/
+.idea/
+.cursor/
+__pycache__/
+.playwright-mcp/
+TEMP/
+archive.zip

@@ -1,0 +1,125 @@
+server:
+  port: 8088
+spring:
+  devtools:
+    restart:
+      enabled: true
+    livereload:
+      enabled: false
+  datasource:
+    url: jdbc:mysql://localhost:3306/old_springboot?useUnicode=true&characterEncoding=utf-8&useSSL=false
+    username: root
+    password: 1234asdw
+    driver-class-name: com.mysql.jdbc.Driver
+    initialization-mode: never
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    password: ''
+    database: 1 #Redis数据库索引【默认为0】
+    timeout: PT10S # 连接超时时间
+
+mybatis-plus:
+  mapper-locations: classpath:/mapper/**/*.xml
+  type-aliases-package: com.morningstar.*.pojo.po
+  configuration:
+    # SQL 日志走 slf4j（由 logback 按 logging.level 输出），每次执行打印 SQL、参数、结果行数
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+logging:
+  config: classpath:logback-spring.xml
+  file: # handler
+    path: ./logs
+  pattern: # formatter
+    dateformat: yyyy-MM-dd HH:mm:ss.SSS
+    console: "%clr(%d{${LOG_DATEFORMAT_PATTERN}}){blue} [%thread] %clr([%level]){magenta} %logger{50} - %msg%n"
+    file: "%d{${LOG_DATEFORMAT_PATTERN}} [%thread] %-5level %logger{50} - %msg%n"
+  level: # logger-level
+    root: info
+    # mapper 接口包开 debug，配合 mybatis-plus log-impl 输出 SQL 日志
+    com.morningstar.old.demo.mapper: debug
+    org.springframework.transaction: debug
+    org.springframework.jdbc.datasource.DataSourceTransactionManager: debug
+  logback:
+    rollingpolicy:
+      max-file-size: 50MB
+      max-history: 30
+
+
+app:
+  jwt:
+    # 获取方式 RandomStringUtils.randomAlphanumeric(algorithm.getMinKeyLength());
+    secret-key: XwZpUj97ItN1wKJLFhZwhuc3AHwLO9aExZX5vHNTskDkWBujFuCD21CGRfA87fqf9WzuJRg9Hye9Gp6lNrlyIgSTwEABSHuPJt4u5diXY8NEE0lXBOGCAqu149rzivij3SXqcMSlmZarRLAEQRhIJ7O6fqM2yjjZDzP1bfjLxgDdZ1FDITfpKfVPn9YlnT6R7PXeevS7gymk8DF2zyHEJroRRjbuXfRvLeI8130ESvsXrFmfO4ZQ9wjuH41qS34v
+    ttl: 604800000 # 1000L * 60 * 60 * 24 * 7
+  auth:
+    users:
+      - account: '100000'
+        name: '王二'
+        password: 'password'
+      - account: '100001'
+        name: '张三'
+        password: 'password'
+      - account: '100002'
+        name: '李四'
+        password: 'password'
+    roles:
+      - tag: "system_admin"
+        name: "系统管理员"
+      - tag: "survey_admin"
+        name: "问卷管理员"
+    permissions:
+      - tag: "sys:user:manage"
+        name: "系统用户管理权限"
+      - tag: "sys:survey:add"
+        name: "问卷新增权限"
+      - tag: "sys:survey:edit"
+        name: "问卷编辑权限"
+      - tag: "sys:survey:delete"
+        name: "问卷删除权限"
+    role-permissions:
+      system_admin:
+        - "sys:user:manage"
+      survey_admin:
+        - "sys:survey:add"
+        - "sys:survey:edit"
+        - "sys:survey:delete"
+    user-roles:
+      "100000":
+        - "system_admin"
+        - "survey_admin"
+      "100001":
+        - "survey_admin"
+  ai:
+    chat:
+#      base-url: "https://api.deepseek.com"
+#      api-key: "${DEEPSEEK_API_KEY}"
+#      model: "deepseek-v4-flash"
+      base-url: "https://api.siliconflow.cn/v1/chat/completions"
+      api-key: "${SILICON_API_KEY}"
+      model: "Qwen/Qwen3.6-35B-A3B"
+      timeout-seconds: 120
+    mcp:
+      client:
+        timeout-seconds: 300
+        # MCP 服务列表：key = 名字（业务侧按名字注入），value = 端点 url
+        # 均为本应用内嵌的 MCP server（/mcp/** 已白名单，自调用不会被认证拦截）
+        endpoints:
+          demo: "http://localhost:8088/mcp/demo"
+        signing:
+          private-key: "${MCP_PRIVATE_KEY}"
+          public-key: "${MCP_PUBLIC_KEY}"
+          issuer: "self"
+          ttl-seconds: 300
+      server:
+        # 信任名册：iss → 该签发方的公钥（X.509 单行 base64）。新调用方接入 = 对方自产密钥对 + 此处登记公钥
+        issuers:
+          self: "${MCP_PUBLIC_KEY}"
+
+springdoc:
+  api-docs:
+    path: /docs/json
+  swagger-ui:
+    path: /docs/ui
+  packagesToScan:
+    - com.morningstar.old.demo.controller
+    - com.morningstar.old.system.controller

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.morningstar.old.demo.mapper.DaasDictMapper">
+    <select id="selectByDaasId" resultType="com.morningstar.old.demo.pojo.bo.DaasFieldDictItem">
+        select m.daas_id, m.daas_field, m.dict_key, d.code, d.label
+        from daas_field_dict_mapping m
+        join daas_dict d on d.dict_key = m.dict_key
+        where m.daas_id = #{daasId}
+        order by m.daas_field, d.code
+    </select>
+</mapper>

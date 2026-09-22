@@ -1,7 +1,7 @@
  <template>
   <div class="chat-layout">
     <header class="chat-header">
-      <div class="brand"><span class="brand-icon">✨</span>灵犀光年小助手</div>
+      <div class="brand"><span class="brand-icon">✨</span>AI问数</div>
       <div class="chat-header-actions">
         <span class="chat-account">{{ auth.account }}</span>
         <a-button size="small" shape="round" @click="onNewSession">
@@ -14,7 +14,7 @@
     <main ref="listRef" class="chat-list">
       <div v-if="chat.messages.length === 0" class="chat-empty">
         <div class="empty-logo">✨</div>
-        <p class="empty-hint">问点什么吧，比如：查看我的数据</p>
+        <p class="empty-hint">问点什么吧，比如：查看企业数据</p>
       </div>
 
       <div

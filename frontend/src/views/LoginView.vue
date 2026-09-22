@@ -1,6 +1,6 @@
 <template>
   <div class="login-page">
-    <a-card class="login-card" title="灵犀光年MCP">
+    <a-card class="login-card" title="AI问数">
       <a-form :model="form" layout="vertical" @finish="onSubmit">
         <a-alert
           v-if="errorMsg"

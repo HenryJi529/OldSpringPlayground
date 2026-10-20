@@ -1,6 +1,7 @@
 package com.morningstar.old.infra.ai;
 
 import com.morningstar.old.infra.properties.AiMcpClientProperties;
+import lombok.extern.slf4j.Slf4j;
 import org.noear.solon.ai.mcp.McpChannel;
 import org.noear.solon.ai.mcp.client.McpClientProvider;
 import org.noear.solon.net.http.HttpUtils;
@@ -23,6 +24,7 @@ import java.util.Set;
  * 业务侧按名字取用并注入 ChatModel。</p>
  */
 @Component
+@Slf4j
 public class McpClients implements DisposableBean {
 
     private final Map<String, McpClientProvider> providers;
@@ -72,6 +74,7 @@ public class McpClients implements DisposableBean {
             HttpUtils http = HttpUtils.http(url);
             String token = McpTokenHolder.get();
             if (token != null) {
+                log.info("[MCP-CLIENT] 当前 mcp-token: {}", token);
                 http.header(HttpHeaders.AUTHORIZATION, token);
             }
             return http;

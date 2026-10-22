@@ -22,10 +22,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * MCP 服务端点（enableOutputSchema：工具声明携带 outputSchema，结果附带 structuredContent）
+ * MCP 服务端点（enableOutputSchema默认关闭：工具声明不携带 outputSchema，结果也不附带 structuredContent）
  */
 @Slf4j
-@McpServerEndpoint(channel = McpChannel.STREAMABLE, name = "demo", mcpEndpoint = "/mcp/demo", enableOutputSchema = true)
+@McpServerEndpoint(channel = McpChannel.STREAMABLE, name = "demo", mcpEndpoint = "/mcp/demo")
 @Component
 @RequiredArgsConstructor
 public class DemoEndpoint implements IMcpServerEndpoint {

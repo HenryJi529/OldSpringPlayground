@@ -1,6 +1,9 @@
 package com.morningstar.old.infra.config.ai.server;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.noear.snack4.Feature;
+import org.noear.snack4.Options;
 import org.noear.solon.Solon;
 import org.noear.solon.ai.chat.prompt.MethodPromptProvider;
 import org.noear.solon.ai.chat.resource.MethodResourceProvider;
@@ -17,6 +20,7 @@ import org.springframework.core.annotation.AnnotationUtils;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.lang.reflect.Field;
 import java.util.List;
 
 /**
@@ -25,16 +29,41 @@ import java.util.List;
  */
 @Configuration
 @RequiredArgsConstructor
+@Slf4j
 public class McpServerConfig {
 
     private final List<IMcpServerEndpoint> serverEndpoints;
 
     @PostConstruct
     public void start() {
+        enableSnack4WriteNulls();
+
         // 启动内嵌 Solon（禁用组件扫描，端点由 springCom2Endpoint 手动收集）
         Solon.start(McpServerConfig.class, new String[]{}, app -> app.enableScanning(false));
 
         springCom2Endpoint();
+    }
+
+    /**
+     * 让 MCP 响应保留 null 字段。
+     *
+     * <p>snack4 默认不序列化 null 字段，而 solon-ai-mcp 的两条结果链路都写死用默认选项：
+     * content 文本（{@code ToolCallResultConverterDefault} → ONode.serialize）和
+     * structuredContent（{@code McpResultResponder} → ONode.ofBean().toBean(Map)），
+     * 导致 LLM 分不清"字段没返回"和"字段为空"。structuredContent 链路没有官方扩展点，
+     * 只能给全局默认选项 {@link Options#DEF_OPTIONS} 追加 {@link Feature#Write_Nulls}；
+     * 该对象是只读的，故反射临时放开。升级 snack4 若失效，最坏退回默认行为（丢 null），不会报错。</p>
+     */
+    private static void enableSnack4WriteNulls() {
+        try {
+            Field readonlyField = Options.class.getDeclaredField("readonly");
+            readonlyField.setAccessible(true);
+            readonlyField.setBoolean(Options.DEF_OPTIONS, false);
+            Options.DEF_OPTIONS.addFeatures(Feature.Write_Nulls);
+            readonlyField.setBoolean(Options.DEF_OPTIONS, true);
+        } catch (Exception e) {
+            log.warn("开启 snack4 Write_Nulls 失败，MCP 响应将忽略 null 字段", e);
+        }
     }
 
     @PreDestroy

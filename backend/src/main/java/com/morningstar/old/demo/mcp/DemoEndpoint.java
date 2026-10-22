@@ -36,7 +36,7 @@ public class DemoEndpoint implements IMcpServerEndpoint {
     /**
      * 模糊匹配企业名：返回匹配到的企业列表（只含id和名称，不含具体数据，无需权限）
      */
-    @ToolMapping(title = "搜索企业", description = "根据关键字模糊匹配企业名称，返回匹配到的企业列表（只含id和名称）")
+    @ToolMapping(title = "搜索企业", description = "根据关键字模糊匹配企业名称，返回匹配到的企业列表（不包含数据）")
     public EnterpriseSearchResult searchEnterprise(@Param(description = "企业名称关键字", required = false) String nameKeyword, @Param(description = "企业类型", required = false) String type) {
         simulateLatency();
 
@@ -56,6 +56,7 @@ public class DemoEndpoint implements IMcpServerEndpoint {
                     DaasFieldDictItem.builder().code("0").label("未上市").build()
             );
             e.setStatus(daasDictUtil.outputCodeToValue(candidates, e.getStatus()));
+            e.setData(null);
         });
         return new EnterpriseSearchResult(matched);
     }
@@ -121,7 +122,7 @@ public class DemoEndpoint implements IMcpServerEndpoint {
      */
     public static class EnterpriseStore {
         private static final List<Enterprise> DATA = Arrays.asList(
-                new Enterprise("1", "晨星科技有限公司", "01", "1", "注册资本5000万，主营软件开发，员工120人，年营收8000万", managerSet("100000", "100001")),
+                new Enterprise("1", "晨星科技有限公司", "01", "1", null, managerSet("100000", "100001")),
                 new Enterprise("2", "晨星数据服务有限公司", "01", "0", "注册资本2000万，主营数据服务，员工45人，年营收3000万", managerSet("100001")),
                 new Enterprise("3", "晨光生物科技有限公司", "02", "1", "注册资本8000万，主营生物医药研发，员工200人，年营收1.5亿", managerSet("100002")),
                 new Enterprise("4", "老泉贸易有限公司", "03", "0", "注册资本1000万，主营进出口贸易，员工30人，年营收5000万", managerSet("100000", "100002")),
@@ -154,11 +155,11 @@ public class DemoEndpoint implements IMcpServerEndpoint {
     public static class Enterprise {
 
         @Schema(description = "企业id")
-        @Param(description = "企业id", required = false)
+        @Param(description = "企业id")
         private String id;
 
         @Schema(description = "企业名称")
-        @Param(description = "企业名称", required = false)
+        @Param(description = "企业名称")
         private String name;
 
         @Schema(description = "企业类型")

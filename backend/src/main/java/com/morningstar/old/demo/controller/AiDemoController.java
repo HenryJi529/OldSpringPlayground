@@ -1,6 +1,6 @@
 package com.morningstar.old.demo.controller;
 
-import com.morningstar.old.infra.ai.*;
+import com.morningstar.old.infra.config.ai.client.*;
 import com.morningstar.old.infra.response.R;
 import com.morningstar.old.infra.constant.RedisConstant;
 import com.morningstar.old.system.util.AuthUtil;

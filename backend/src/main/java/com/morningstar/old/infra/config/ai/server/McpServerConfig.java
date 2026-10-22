@@ -1,4 +1,4 @@
-package com.morningstar.old.infra.config;
+package com.morningstar.old.infra.config.ai.server;
 
 import lombok.RequiredArgsConstructor;
 import org.noear.solon.Solon;

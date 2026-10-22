@@ -3,7 +3,7 @@ package com.morningstar.old.demo.mcp;
 import com.morningstar.old.demo.pojo.bo.DaasFieldDictItem;
 import com.morningstar.old.infra.exception.BaseException;
 import com.morningstar.old.infra.response.ResponseCode;
-import com.morningstar.old.infra.ai.McpServerUtil;
+import com.morningstar.old.infra.config.ai.server.McpServerUtil;
 import com.morningstar.old.infra.util.DaasDictUtil;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;

@@ -1,7 +1,5 @@
-package com.morningstar.old.infra.config;
+package com.morningstar.old.infra.config.ai.client;
 
-import com.morningstar.old.infra.ai.McpClients;
-import com.morningstar.old.infra.ai.RedisChatSession;
 import org.noear.solon.ai.chat.ChatModel;
 import org.noear.solon.ai.chat.ChatSessionFactory;
 import org.springframework.beans.factory.annotation.Value;

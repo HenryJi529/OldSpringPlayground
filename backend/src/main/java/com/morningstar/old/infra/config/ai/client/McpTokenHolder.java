@@ -1,4 +1,4 @@
-package com.morningstar.old.infra.ai;
+package com.morningstar.old.infra.config.ai.client;
 
 /**
  * MCP 调用凭证持有者：以 ThreadLocal 暂存当前请求的调用方 token（Authorization 头原值）。

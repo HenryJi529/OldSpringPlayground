@@ -1,4 +1,4 @@
-package com.morningstar.old.infra.ai;
+package com.morningstar.old.infra.config.ai.server;
 
 import com.morningstar.old.infra.properties.AiMcpServerProperties;
 import io.jsonwebtoken.*;

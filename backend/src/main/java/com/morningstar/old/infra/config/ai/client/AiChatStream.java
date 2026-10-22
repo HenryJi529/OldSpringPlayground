@@ -1,4 +1,4 @@
-package com.morningstar.old.infra.ai;
+package com.morningstar.old.infra.config.ai.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.morningstar.old.infra.util.JsonUtil;

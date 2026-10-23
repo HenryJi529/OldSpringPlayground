@@ -48,15 +48,13 @@ public class DemoEndpoint implements IMcpServerEndpoint {
         if(type != null && !type.isEmpty()) {
             map.put("type", daasDictUtil.inputValueToCode(daasId, "type", type));
         }
-        List<Enterprise> matched = EnterpriseStore.search(map);
+        List<EnterpriseBrief> matched = EnterpriseStore.search(map);
         matched.forEach(e -> {
             e.setType(daasDictUtil.outputCodeToValue(daasId, "type", e.getType()));
-            List<DaasFieldDictItem> candidates = Arrays.asList(
+            e.setStatus(daasDictUtil.outputCodeToValue(Arrays.asList(
                     DaasFieldDictItem.builder().code("1").label("已上市").build(),
                     DaasFieldDictItem.builder().code("0").label("未上市").build()
-            );
-            e.setStatus(daasDictUtil.outputCodeToValue(candidates, e.getStatus()));
-            e.setData(null);
+            ), e.getStatus()));
         });
         return new EnterpriseSearchResult(matched);
     }
@@ -73,10 +71,11 @@ public class DemoEndpoint implements IMcpServerEndpoint {
             throw new BaseException(ResponseCode.AUTHENTICATION_FAILED);
         }
 
-        Enterprise enterprise = EnterpriseStore.DATA.stream().filter(e -> enterpriseId.equals(e.getId())).findFirst().orElse(null);
-        if (enterprise == null) {
+        Enterprise src = EnterpriseStore.DATA.stream().filter(e -> enterpriseId.equals(e.getId())).findFirst().orElse(null);
+        if (src == null) {
             throw new BaseException("企业[" + enterpriseId + "]不存在");
         }
+        Enterprise enterprise = new Enterprise(src.getId(), src.getName(), src.getType(), src.getStatus(), src.getData(), src.getManagers());
 
         // 数据权限：只有管户（权限账号集合内）才能查看该企业的数据
         if (!enterprise.getManagers().contains(account)) {
@@ -85,6 +84,10 @@ public class DemoEndpoint implements IMcpServerEndpoint {
         }
 
         enterprise.setType(daasDictUtil.outputCodeToValue("get_enterprise", "type", enterprise.getType()));
+        enterprise.setStatus(daasDictUtil.outputCodeToValue(Arrays.asList(
+                DaasFieldDictItem.builder().code("1").label("已上市").build(),
+                DaasFieldDictItem.builder().code("0").label("未上市").build()
+        ), enterprise.getStatus()));
 
         return enterprise;
     }
@@ -103,7 +106,7 @@ public class DemoEndpoint implements IMcpServerEndpoint {
     /**
      * 企业搜索结果
      *
-     * <p>不直接返回 {@code List<Enterprise>} 的原因：MCP 规范要求 outputSchema 根类型必须是
+     * <p>不直接返回企业信息列表的原因：MCP 规范要求 outputSchema 根类型必须是
      * object；且 solon 填充 structuredContent 时按 Map 转换（ONode bean→Map），List 根会转失败。</p>
      */
     @Data
@@ -112,8 +115,8 @@ public class DemoEndpoint implements IMcpServerEndpoint {
         /**
          * 匹配到的企业列表（只含id和名称）
          */
-        @Param(description = "匹配到的企业列表（只含id和名称）")
-        private List<Enterprise> enterprises;
+        @Param(description = "匹配到的企业列表（不包含数据）")
+        private List<EnterpriseBrief> enterpriseBriefs;
     }
 
     /**
@@ -133,14 +136,14 @@ public class DemoEndpoint implements IMcpServerEndpoint {
             return new HashSet<>(Arrays.asList(accounts));
         }
 
-        public static List<Enterprise> search(HashMap<String, Object> paramMap){
+        public static List<EnterpriseBrief> search(HashMap<String, Object> paramMap){
             String nameKeyword = (String) paramMap.get("nameKeyword");
             String type = (String) paramMap.get("type");
             return EnterpriseStore.DATA.stream()
                     .filter(e -> nameKeyword == null || nameKeyword.trim().isEmpty() || e.getName().contains(nameKeyword.trim()))
                     .filter(e -> type == null || type.isEmpty() || e.getType().equals(type))
                     // 搜索只是发现入口：复制一份只带id和名称的壳，具体数据和管户账号不出这个接口
-                    .map(e -> new Enterprise(e.getId(), e.getName(), e.getType(), e.getStatus(), null, null))
+                    .map(e -> new EnterpriseBrief(e.getId(), e.getName(), e.getType(), e.getStatus(), e.getManagers()))
                     .collect(Collectors.toList());
         }
     }
@@ -179,4 +182,30 @@ public class DemoEndpoint implements IMcpServerEndpoint {
         private Set<String> managers;
     }
 
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class EnterpriseBrief {
+
+        @Schema(description = "企业id")
+        @Param(description = "企业id")
+        private String id;
+
+        @Schema(description = "企业名称")
+        @Param(description = "企业名称")
+        private String name;
+
+        @Schema(description = "企业类型")
+        @Param(description = "企业类型", required = false)
+        private String type;
+
+        @Schema(description = "上市状态")
+        @Param(description = "上市状态", required = false)
+        private String status;
+
+        @Schema(description = "管户账号集合")
+        @Param(description = "管户账号集合", required = false)
+        private Set<String> managers;
+    }
 }

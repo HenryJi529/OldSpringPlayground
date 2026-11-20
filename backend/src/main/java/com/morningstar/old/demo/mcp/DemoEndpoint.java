@@ -36,7 +36,7 @@ public class DemoEndpoint implements IMcpServerEndpoint {
     /**
      * 模糊匹配企业名：返回匹配到的企业列表（只含id和名称，不含具体数据，无需权限）
      */
-    @ToolMapping(title = "搜索企业", description = "根据关键字模糊匹配企业名称，返回匹配到的企业列表（不包含数据）")
+    @ToolMapping(name = "search_enterprise", title = "搜索企业", description = "根据关键字模糊匹配企业名称，返回匹配到的企业列表（不包含数据）")
     public EnterpriseSearchResult searchEnterprise(@Param(name = "name_keyword", description = "企业名称关键字", required = false) String nameKeyword, @Param(description = "企业类型", required = false) String type) {
         simulateLatency();
 
@@ -62,7 +62,7 @@ public class DemoEndpoint implements IMcpServerEndpoint {
     /**
      * 按企业id查询企业数据：解析 mcp-token → 账号 → 校验该账号是否为企业的管户
      */
-    @ToolMapping(title = "查询指定企业", description = "根据企业id查询企业具体数据（需要调用方已认证，且调用方必须是该企业的管户）")
+    @ToolMapping(name="get_enterprise", title = "查询指定企业", description = "根据企业id查询企业具体数据（需要调用方已认证，且调用方必须是该企业的管户）")
     public Enterprise getEnterprise(@Param(name = "enterprise_id", description = "企业id") String enterpriseId) {
         simulateLatency();
 

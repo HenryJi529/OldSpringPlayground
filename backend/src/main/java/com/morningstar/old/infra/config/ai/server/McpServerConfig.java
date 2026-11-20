@@ -96,6 +96,8 @@ public class McpServerConfig {
             serverEndpointProvider.addPrompt(new MethodPromptProvider(serverEndpointClz, serverEndpoint));
 
             serverEndpointProvider.postStart();
+            // MCP 放入 Solon 上下文
+            Solon.context().wrapAndPut("MCP-" + serverEndpointProvider.getName(), serverEndpointProvider);
         }
     }
 

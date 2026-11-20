@@ -11,7 +11,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.noear.solon.ai.annotation.PromptMapping;
+import org.noear.solon.ai.annotation.ResourceMapping;
 import org.noear.solon.ai.annotation.ToolMapping;
+import org.noear.solon.ai.chat.message.ChatMessage;
+import org.noear.solon.ai.chat.prompt.Prompt;
 import org.noear.solon.ai.mcp.McpChannel;
 import org.noear.solon.ai.mcp.server.IMcpServerEndpoint;
 import org.noear.solon.ai.mcp.server.annotation.McpServerEndpoint;
@@ -36,8 +40,8 @@ public class DemoEndpoint implements IMcpServerEndpoint {
     /**
      * 模糊匹配企业名：返回匹配到的企业列表（只含id和名称，不含具体数据，无需权限）
      */
-    @ToolMapping(name = "search_enterprise", title = "搜索企业", description = "根据关键字模糊匹配企业名称，返回匹配到的企业列表（不包含数据）")
-    public EnterpriseSearchResult searchEnterprise(@Param(name = "name_keyword", description = "企业名称关键字", required = false) String nameKeyword, @Param(description = "企业类型", required = false) String type) {
+    @ToolMapping(name = "search_enterprise", title = "搜索企业", description = "根据关键字模糊匹配企业名称，返回匹配到的企业列表（不包含数据）", meta = "{\"need_permission\":false}")
+    public EnterpriseSearchResult searchEnterpriseTool(@Param(name = "name_keyword", description = "企业名称关键字", required = false) String nameKeyword, @Param(description = "企业类型", required = false) String type) {
         simulateLatency();
 
         String daasId = "search_enterprise";
@@ -62,8 +66,8 @@ public class DemoEndpoint implements IMcpServerEndpoint {
     /**
      * 按企业id查询企业数据：解析 mcp-token → 账号 → 校验该账号是否为企业的管户
      */
-    @ToolMapping(name="get_enterprise", title = "查询指定企业", description = "根据企业id查询企业具体数据（需要调用方已认证，且调用方必须是该企业的管户）")
-    public Enterprise getEnterprise(@Param(name = "enterprise_id", description = "企业id") String enterpriseId) {
+    @ToolMapping(name="get_enterprise", title = "查询指定企业", description = "根据企业id查询企业具体数据（需要调用方已认证，且调用方必须是该企业的管户）", meta = "{\"need_permission\":true}")
+    public Enterprise getEnterpriseTool(@Param(name = "enterprise_id", description = "企业id") String enterpriseId) {
         simulateLatency();
 
         String account = mcpServerUtil.getAccount();
@@ -90,6 +94,27 @@ public class DemoEndpoint implements IMcpServerEndpoint {
         ), enterprise.getStatus()));
 
         return enterprise;
+    }
+
+    /**
+     * 企业分析提示词：由 MCP 客户端获取后放入对话，引导模型组合使用企业搜索和查询工具。
+     */
+    @PromptMapping(name = "enterprise_analysis", title = "企业分析", description = "生成企业分析任务提示词，引导模型搜索企业并查询企业档案")
+    public Prompt enterpriseAnalysisPrompt(
+            @Param(name = "enterprise_name", description = "要分析的企业名称") String enterpriseName,
+            @Param(name = "analysis_focus", description = "分析重点", required = false) String analysisFocus) {
+        if (enterpriseName == null || enterpriseName.trim().isEmpty()) {
+            throw new BaseException("入参[enterprise_name]不能为空");
+        }
+        String focus = analysisFocus == null || analysisFocus.trim().isEmpty()
+                ? "经营概况、上市状态和主要风险"
+                : analysisFocus.trim();
+
+        // MCP PromptMessage 仅支持 user/assistant 角色，角色要求也放在 user 消息中。
+        return Prompt.of(
+                ChatMessage.ofSystem("你是一名企业分析助手。" + "请先使用 searchEnterprise 工具按企业名称查找企业，再使用 getEnterprise 工具获取企业档案；如果企业不存在或无权限，请如实说明，不要编造。请用中文输出企业概况、分析结论和风险提示。"),
+                ChatMessage.ofUser("目标企业：" + enterpriseName.trim() + "\n分析重点：" + focus)
+        );
     }
 
     /**

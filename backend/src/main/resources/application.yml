@@ -109,7 +109,7 @@ app:
           private-key: "${MCP_PRIVATE_KEY}"
           public-key: "${MCP_PUBLIC_KEY}"
           issuer: "self"
-          ttl-seconds: 300
+          ttl-seconds: 1800
       server:
         # 信任名册：iss → 该签发方的公钥（X.509 单行 base64）。新调用方接入 = 对方自产密钥对 + 此处登记公钥
         issuers:
